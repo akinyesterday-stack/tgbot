@@ -1,5 +1,6 @@
 import os
 import telebot
+import requests
 from groq import Groq
 from tavily import TavilyClient
 
@@ -12,18 +13,18 @@ tavily = TavilyClient(api_key=TAVILY_API_KEY)
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 
-def derin_arama(sorgu):
-    """Tavily ile interneti detaylı tarar ve en alakalı sonuçları getirir"""
+def web_ara(sorgu):
+    """Tavily ile hızlı internet araması yapar"""
     try:
         response = tavily.search(
             query=sorgu,
-            search_depth="advanced",
+            search_depth="basic",
             max_results=5,
             include_answer=True
         )
         context = ""
         if response.get("answer"):
-            context += f"Özet Cevap: {response['answer']}\n\n"
+            context += f"Özet: {response['answer']}\n\n"
         for r in response.get("results", []):
             context += f"Kaynak: {r['title']}\nURL: {r['url']}\nİçerik: {r['content']}\n\n"
         return context
@@ -31,42 +32,63 @@ def derin_arama(sorgu):
         return f"Arama hatası: {e}"
 
 
+def siteyi_oku(url):
+    """Jina AI ile verilen URL'nin içeriğini okur ve analiz eder"""
+    try:
+        if not url.startswith("http"):
+            url = "https://" + url
+        jina_url = f"https://r.jina.ai/{url}"
+        headers = {"Accept": "text/plain"}
+        response = requests.get(jina_url, headers=headers, timeout=15)
+        return response.text[:4000]
+    except Exception as e:
+        return f"Site okunamadı: {e}"
+
+
+def groq_analiz(sistem, kullanici_sorusu):
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": sistem},
+            {"role": "user", "content": kullanici_sorusu}
+        ],
+        temperature=0.2,
+        max_tokens=1024
+    )
+    return response.choices[0].message.content
+
+
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     bot.send_chat_action(message.chat.id, 'typing')
-    user_query = message.text
-
-    # 1. Adım: Tavily ile internetten güncel veri topla
-    raw_data = derin_arama(user_query)
-
-    # 2. Adım: Groq ile analiz ettir
-    system_prompt = (
-        "Sen dünyanın en zeki dijital asistanısın. Görevin, sana sunulan ham internet verilerini "
-        "titizlikle incelemek ve kullanıcının sorusuna NOKTA ATIŞI cevap vermektir.\n\n"
-        "KURALLAR:\n"
-        "1. Eğer altın/dolar fiyatı soruluyorsa, veriler içindeki en güncel rakamı bul.\n"
-        "2. Eğer uçak/otobüs bileti soruluyorsa, fiyat aralıklarını ve hangi sitelerde olduğunu listele.\n"
-        "3. Asla 'bilmiyorum' deme, veriler içinde ipucu varsa onları kullan.\n"
-        "4. Cevapların kısa, öz ve profesyonel olsun.\n"
-        "5. Türkçe cevap ver."
-    )
-
-    combined_prompt = f"İNTERNETTEN GELEN CANLI VERİLER:\n{raw_data}\n\nKULLANICI SORUSU: {user_query}"
+    text = message.text.strip()
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": combined_prompt}
-            ],
-            temperature=0.2
-        )
-        final_answer = response.choices[0].message.content
-        bot.reply_to(message, final_answer)
+        # URL içeriyorsa siteye gir ve analiz et
+        if any(text.startswith(p) for p in ["http://", "https://", "www."]) or \
+           ("." in text and " " not in text):
+            bot.send_message(message.chat.id, "🌐 Site okunuyor...")
+            icerik = siteyi_oku(text)
+            sistem = (
+                "Sen bir web analiz uzmanısın. Verilen site içeriğini Türkçe olarak "
+                "özetle, önemli bilgileri çıkar ve kullanıcıya net şekilde sun."
+            )
+            yanit = groq_analiz(sistem, f"Site içeriği:\n{icerik}\n\nBu siteyi analiz et ve özetle.")
+        else:
+            # Normal sorularda internette ara
+            arama = web_ara(text)
+            sistem = (
+                "Sen hızlı ve zeki bir asistansın. İnternet verilerini kullanarak "
+                "kullanıcının sorusuna kısa, net ve Türkçe cevap ver. "
+                "Fiyat/tarih gibi somut bilgiler varsa mutlaka belirt. Asla uydurma."
+            )
+            yanit = groq_analiz(sistem, f"İnternet verileri:\n{arama}\n\nSoru: {text}")
+
+        bot.reply_to(message, yanit)
+
     except Exception as e:
-        bot.reply_to(message, "Şu an sistemde bir yoğunluk var, lütfen tekrar sor.")
+        bot.reply_to(message, "Şu an yoğunluk var, tekrar dene.")
 
 
-print("Süper Zeki Bot (Tavily) Başlatıldı!")
+print("⚡ Hızlı Bot (Jina + Tavily + Groq Instant) Başlatıldı!")
 bot.infinity_polling()
