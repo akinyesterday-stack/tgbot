@@ -401,18 +401,22 @@
       </table>`;
   }
 
-  function renderApproved(ids) {
-    document.getElementById('statApproved').textContent = ids.length;
-    document.getElementById('approvedBadge').textContent = ids.length;
+  function renderApproved(users) {
+    document.getElementById('statApproved').textContent = users.length;
+    document.getElementById('approvedBadge').textContent = users.length;
     const el = document.getElementById('approvedTable');
-    if (!ids.length) { el.innerHTML = '<div class="empty">Henüz onaylı kullanıcı yok.</div>'; return; }
+    if (!users.length) { el.innerHTML = '<div class="empty">Henüz onaylı kullanıcı yok.</div>'; return; }
     el.innerHTML = `
       <table>
-        <tr><th>Kullanıcı ID</th><th>İşlem</th></tr>
-        ${ids.map(id => `
+        <tr><th>Kullanıcı</th><th>Son Mesaj</th><th>İşlem</th></tr>
+        ${users.map(u => `
           <tr>
-            <td><span class="user-name">${id}</span></td>
-            <td><button class="btn btn-remove" onclick="removeUser(${id})">🗑️ Kaldır</button></td>
+            <td>
+              <div class="user-name">${esc(u.name || u.id)}</div>
+              <div class="user-id">ID: ${u.id} ${u.username ? '· @'+esc(u.username) : ''}</div>
+            </td>
+            <td><div class="user-msg">${esc(u.message || '')}</div></td>
+            <td><button class="btn btn-remove" onclick="removeUser(${u.id})">🗑️ Kaldır</button></td>
           </tr>
         `).join('')}
       </table>`;
