@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bot Admin Paneli</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1f2e, #161b27);
+      border-bottom: 1px solid #30363d;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    header .logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #2ea043, #388bfd);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e6edf3;
+    }
+
+    header p {
+      font-size: 13px;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .setup-screen {
+      max-width: 460px;
+      margin: 80px auto;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+      padding: 36px;
+    }
+
+    .setup-screen h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #e6edf3;
+    }
+
+    .setup-screen p {
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e6edf3;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: #388bfd; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-connect { background: #388bfd; color: #fff; width: 100%; justify-content: center; }
+    .btn-approve { background: #238636; color: #fff; font-size: 12px; padding: 6px 14px; }
+    .btn-reject  { background: #da3633; color: #fff; font-size: 12px; padding: 6px 14px; }
+    .btn-remove  { background: #6e7681; color: #fff; font-size: 12px; padding: 6px 14px; }
+
+    .main-screen { display: none; padding: 28px 32px; max-width: 960px; margin: 0 auto; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .num {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card .num.yellow { color: #e3b341; }
+    .stat-card .num.green  { color: #2ea043; }
+
+    .stat-card .lbl {
+      font-size: 12px;
+      color: #8b949e;
+      margin-top: 6px;
+    }
+
+    .section {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .section-head h3 {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      color: #8b949e;
+    }
+
+    .badge.yellow { background: #2d2208; border-color: #e3b341; color: #e3b341; }
+    .badge.green  { background: #0d2119; border-color: #2ea043; color: #2ea043; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 10px 20px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    td {
+      padding: 14px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid #21262d;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1c2128; }
+
+    .user-name {
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .user-id {
+      font-size: 11px;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .user-msg {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #8b949e;
+    }
+
+    .actions { display: flex; gap: 6px; }
+
+    .empty {
+      padding: 36px;
+      text-align: center;
+      color: #8b949e;
+      font-size: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: #238636;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { background: #da3633; }
+
+    .refresh-info {
+      font-size: 12px;
+      color: #6e7681;
+      text-align: right;
+      margin-bottom: 16px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2ea043;
+      margin-right: 5px;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛡️</div>
+  <div>
+    <h1>Bot Admin Paneli</h1>
+    <p>Akın Altun — Telegram Bot Yönetimi</p>
+  </div>
+</header>
+
+<!-- Bağlantı ekranı -->
+<div class="setup-screen" id="setupScreen">
+  <h2>🔐 Panele Bağlan</h2>
+  <p>Railway'deki bot URL'ini ve admin şifreni girerek panele bağlan.</p>
+
+  <label>Bot URL (Railway)</label>
+  <input id="apiUrl" type="url" placeholder="https://tgbot-xxx.railway.app" />
+
+  <label>Admin Şifresi</label>
+  <input id="adminSecret" type="password" placeholder="akinaltun2024" />
+
+  <button class="btn btn-connect" onclick="connect()">🔌 Bağlan</button>
+</div>
+
+<!-- Ana panel -->
+<div class="main-screen" id="mainScreen">
+
+  <div class="refresh-info">
+    <span class="dot"></span> Otomatik yenileme: 10 saniyede bir
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="num yellow" id="statPending">0</div>
+      <div class="lbl">Bekleyen Talep</div>
+    </div>
+    <div class="stat-card">
+      <div class="num green" id="statApproved">0</div>
+      <div class="lbl">Onaylı Kullanıcı</div>
+    </div>
+  </div>
+
+  <!-- Bekleyenler -->
+  <div class="section">
+    <div class="section-head">
+      <h3>⏳ Bekleyen Talepler <span class="badge yellow" id="pendingBadge">0</span></h3>
+    </div>
+    <div id="pendingTable"></div>
+  </div>
+
+  <!-- Onaylılar -->
+  <div class="section">
+    <div class="section-head">
+      <h3>✅ Onaylı Kullanıcılar <span class="badge green" id="approvedBadge">0</span></h3>
+    </div>
+    <div id="approvedTable"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let API_URL = '';
+  let ADMIN_SECRET = '';
+
+  function connect() {
+    API_URL = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+    ADMIN_SECRET = document.getElementById('adminSecret').value.trim();
+    if (!API_URL || !ADMIN_SECRET) { showToast('URL ve şifre gerekli!', true); return; }
+    localStorage.setItem('bot_api_url', API_URL);
+    localStorage.setItem('bot_admin_secret', ADMIN_SECRET);
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    loadUsers();
+    setInterval(loadUsers, 10000);
+  }
+
+  async function apiFetch(path, method = 'GET', body = null) {
+    const opts = {
+      method,
+      headers: { 'X-Admin-Secret': ADMIN_SECRET, 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_URL + path, opts);
+    return res.json();
+  }
+
+  async function loadUsers() {
+    try {
+      const data = await apiFetch('/api/users');
+      renderPending(data.pending || []);
+      renderApproved(data.approved || []);
+    } catch (e) {
+      showToast('Bağlantı hatası!', true);
+    }
+  }
+
+  function renderPending(users) {
+    document.getElementById('statPending').textContent = users.length;
+    document.getElementById('pendingBadge').textContent = users.length;
+    const el = document.getElementById('pendingTable');
+    if (!users.length) { el.innerHTML = '<div class="empty">Bekleyen talep yok 🎉</div>'; return; }
+    el.innerHTML = `
+      <table>
+        <tr><th>Kullanıcı</th><th>Mesaj</th><th>İşlem</th></tr>
+        ${users.map(u => `
+          <tr>
+            <td>
+              <div class="user-name">${esc(u.name)}</div>
+              <div class="user-id">ID: ${u.id} ${u.username ? '· @'+esc(u.username) : ''}</div>
+            </td>
+            <td><div class="user-msg">${esc(u.message || '')}</div></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-approve" onclick="approveUser(${u.id})">✅ Onayla</button>
+                <button class="btn btn-reject"  onclick="rejectUser(${u.id})">❌ Reddet</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </table>`;
+  }
+
+  function renderApproved(ids) {
+    document.getElementById('statApproved').textContent = ids.length;
+    document.getElementById('approvedBadge').textContent = ids.length;
+    const el = document.getElementById('approvedTable');
+    if (!ids.length) { el.innerHTML = '<div class="empty">Henüz onaylı kullanıcı yok.</div>'; return; }
+    el.innerHTML = `
+      <table>
+        <tr><th>Kullanıcı ID</th><th>İşlem</th></tr>
+        ${ids.map(id => `
+          <tr>
+            <td><span class="user-name">${id}</span></td>
+            <td><button class="btn btn-remove" onclick="removeUser(${id})">🗑️ Kaldır</button></td>
+          </tr>
+        `).join('')}
+      </table>`;
+  }
+
+  async function approveUser(id) {
+    await apiFetch('/api/approve', 'POST', { user_id: id });
+    showToast('Kullanıcı onaylandı ✅');
+    loadUsers();
+  }
+
+  async function rejectUser(id) {
+    await apiFetch('/api/reject', 'POST', { user_id: id });
+    showToast('Kullanıcı reddedildi ❌', true);
+    loadUsers();
+  }
+
+  async function removeUser(id) {
+    await apiFetch('/api/remove', 'POST', { user_id: id });
+    showToast('Kullanıcı kaldırıldı');
+    loadUsers();
+  }
+
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (error ? ' error' : '') + ' show';
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Kaydedilmiş bağlantıyı yükle
+  window.onload = () => {
+    const u = localStorage.getItem('bot_api_url');
+    const s = localStorage.getItem('bot_admin_secret');
+    if (u) document.getElementById('apiUrl').value = u;
+    if (s) document.getElementById('adminSecret').value = s;
+  };
+</script>
+</body>
+</html>
