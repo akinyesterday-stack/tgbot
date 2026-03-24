@@ -2,3 +2,5 @@ pyTelegramBotAPI
 groq
 tavily-python
 requests
+flask
+flask-cors
