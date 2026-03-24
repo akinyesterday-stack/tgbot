@@ -20,8 +20,8 @@ tavily = TavilyClient(api_key=TAVILY_API_KEY)
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 lock = threading.Lock()
-approved_users = set()
-pending_users = {}  # user_id -> dict(id, name, message)
+approved_users = {}  # user_id -> dict(id, name, username, message)
+pending_users = {}   # user_id -> dict(id, name, username, message)
 
 # --- Flask Admin API ---
 app = Flask(__name__)
@@ -43,7 +43,7 @@ def get_users():
         return jsonify({'error': 'Yetkisiz erişim'}), 401
     with lock:
         pending = list(pending_users.values())
-        approved = list(approved_users)
+        approved = list(approved_users.values())
     return jsonify({'pending': pending, 'approved': approved})
 
 
@@ -53,8 +53,8 @@ def approve_user():
         return jsonify({'error': 'Yetkisiz erişim'}), 401
     user_id = int(request.json.get('user_id'))
     with lock:
-        approved_users.add(user_id)
-        pending_users.pop(user_id, None)
+        user_info = pending_users.pop(user_id, {'id': user_id, 'name': str(user_id), 'username': '', 'message': ''})
+        approved_users[user_id] = user_info
     try:
         bot.send_message(user_id, "✅ Erişiminiz onaylandı! Artık sorularınızı sorabilirsiniz.")
     except Exception:
@@ -69,7 +69,7 @@ def reject_user():
     user_id = int(request.json.get('user_id'))
     with lock:
         pending_users.pop(user_id, None)
-        approved_users.discard(user_id)
+        approved_users.pop(user_id, None)
     try:
         bot.send_message(user_id, "❌ Erişim talebiniz reddedildi.")
     except Exception:
@@ -83,7 +83,7 @@ def remove_user():
         return jsonify({'error': 'Yetkisiz erişim'}), 401
     user_id = int(request.json.get('user_id'))
     with lock:
-        approved_users.discard(user_id)
+        approved_users.pop(user_id, None)
     return jsonify({'success': True})
 
 
@@ -157,8 +157,8 @@ def handle_approval(call):
     user_id = int(parts[1])
     if action == "onayla":
         with lock:
-            approved_users.add(user_id)
-            pending_users.pop(user_id, None)
+            user_info = pending_users.pop(user_id, {'id': user_id, 'name': str(user_id), 'username': '', 'message': ''})
+            approved_users[user_id] = user_info
         bot.answer_callback_query(call.id, "Kullanıcı onaylandı ✅")
         bot.edit_message_text(f"{call.message.text}\n\n✅ ONAYLANDI", call.message.chat.id, call.message.message_id)
         try:
@@ -168,7 +168,7 @@ def handle_approval(call):
     else:
         with lock:
             pending_users.pop(user_id, None)
-            approved_users.discard(user_id)
+            approved_users.pop(user_id, None)
         bot.answer_callback_query(call.id, "Kullanıcı reddedildi ❌")
         bot.edit_message_text(f"{call.message.text}\n\n❌ REDDEDİLDİ", call.message.chat.id, call.message.message_id)
         try:
@@ -194,7 +194,7 @@ def handle_all_messages(message):
         return
 
     with lock:
-        is_approved = user_id in approved_users
+        is_approved = user_id in approved_users  # dict key check
         is_pending = user_id in pending_users
 
     if is_approved:
