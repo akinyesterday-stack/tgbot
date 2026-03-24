@@ -64,7 +64,6 @@ def handle_all_messages(message):
     text = message.text.strip()
 
     try:
-        # URL içeriyorsa siteye gir ve analiz et
         if any(text.startswith(p) for p in ["http://", "https://", "www."]) or \
            ("." in text and " " not in text):
             bot.send_message(message.chat.id, "🌐 Site okunuyor...")
@@ -73,21 +72,32 @@ def handle_all_messages(message):
                 "Sen bir web analiz uzmanısın. Verilen site içeriğini Türkçe olarak "
                 "özetle, önemli bilgileri çıkar ve kullanıcıya net şekilde sun."
             )
-            yanit = groq_analiz(sistem, f"Site içeriği:\n{icerik}\n\nBu siteyi analiz et ve özetle.")
+            try:
+                yanit = groq_analiz(sistem, f"Site içeriği:\n{icerik}\n\nBu siteyi analiz et ve özetle.")
+            except Exception as e:
+                bot.reply_to(message, f"Groq hatası: {str(e)}")
+                return
         else:
-            # Normal sorularda internette ara
-            arama = web_ara(text)
+            try:
+                arama = web_ara(text)
+            except Exception as e:
+                bot.reply_to(message, f"Tavily hatası: {str(e)}")
+                return
             sistem = (
                 "Sen hızlı ve zeki bir asistansın. İnternet verilerini kullanarak "
                 "kullanıcının sorusuna kısa, net ve Türkçe cevap ver. "
                 "Fiyat/tarih gibi somut bilgiler varsa mutlaka belirt. Asla uydurma."
             )
-            yanit = groq_analiz(sistem, f"İnternet verileri:\n{arama}\n\nSoru: {text}")
+            try:
+                yanit = groq_analiz(sistem, f"İnternet verileri:\n{arama}\n\nSoru: {text}")
+            except Exception as e:
+                bot.reply_to(message, f"Groq hatası: {str(e)}")
+                return
 
         bot.reply_to(message, yanit)
 
     except Exception as e:
-        bot.reply_to(message, f"Hata: {str(e)}")
+        bot.reply_to(message, f"Genel hata: {str(e)}")
 
 
 print("⚡ Hızlı Bot (Jina + Tavily + Groq Instant) Başlatıldı!")
