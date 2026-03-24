@@ -87,7 +87,7 @@ def handle_all_messages(message):
         bot.reply_to(message, yanit)
 
     except Exception as e:
-        bot.reply_to(message, "Şu an yoğunluk var, tekrar dene.")
+        bot.reply_to(message, f"Hata: {str(e)}")
 
 
 print("⚡ Hızlı Bot (Jina + Tavily + Groq Instant) Başlatıldı!")
